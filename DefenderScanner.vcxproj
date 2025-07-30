@@ -126,7 +126,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="DefenderScanner.cpp" />
-    <ClCompile Include="Scanner.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="scanner.h" />

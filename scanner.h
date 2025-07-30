@@ -4,7 +4,7 @@
 class Scanner
 {
 private:
-	std::vector<char>* fileContent;
+	std::vector<char>* fileContent = nullptr;
 public:
 	DWORD scan(std::string path);
 
