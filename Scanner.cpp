@@ -3,11 +3,13 @@
 #include <fstream>
 #include <windows.h>
 #include <boost/locale.hpp>
+#include <random>
 #include "scanner.h"
 
 // convert path string to wchar and feed it to createprocess
 DWORD Scanner::scan(std::string path)
 {
+    /*
     std::wstring wide_path = boost::locale::conv::to_utf<wchar_t>(path, "UTF-8");
 
     std::wstring cmdLine = std::format(
@@ -45,6 +47,21 @@ DWORD Scanner::scan(std::string path)
         std::cerr << "Failed to start process. Error: " << GetLastError() << "\n";
         return GetLastError();
     }
+    */
+
+    std::random_device rd;                  // Seed
+    std::mt19937 gen(rd());                 // Mersenne Twister RNG
+    std::bernoulli_distribution dist(0.5);  // 50% true, 50% false
+
+    bool randomBool = dist(gen);
+    if (randomBool == true)
+    {
+        return 2;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 // load the file content into heap so it can be split and written to files
@@ -59,13 +76,14 @@ int Scanner::openFile(std::string path)
 
     // get filesize
     file.seekg(0, std::ios::end);
-    size_t fileSize = file.tellg();
+    size_t file_size = file.tellg();
     file.seekg(0, std::ios::beg);
 
 
-    fileContent = new std::vector<char>(fileSize);
-    file.read(fileContent->data(), fileSize);
-
+    fileContent = new std::vector<char>(file_size);
+    file.read(fileContent->data(), file_size);  // save filecontent
+    fileSize = file_size;                       // save filesize 
+                                                // in scanner for later use 
     if (!file.good())
     {
         std::cerr << "[-] Could not read file";
