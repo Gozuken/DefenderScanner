@@ -4,7 +4,11 @@
 class Scanner
 {
 private:
+<<<<<<< HEAD
 	
+=======
+	std::vector<char>* fileContent = nullptr;
+>>>>>>> bfbdd24 (working need to add binary search now)
 public:
 	std::vector<char>* fileContent = nullptr;
 	std::size_t fileSize = 0;

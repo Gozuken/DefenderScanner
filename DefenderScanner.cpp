@@ -5,6 +5,7 @@
 
 void debug(std::size_t left, std::size_t right, DWORD scanResult)
 {
+<<<<<<< HEAD
 	std::cout << "[-] LEFT : " << left << ", RIGHT : " << right << std::endl;
 	std::cout << "Scan result : " << scanResult << std::endl;
 	std::cin.get();
@@ -14,10 +15,14 @@ void debug(std::size_t left, std::size_t right, DWORD scanResult)
 // maybe use vector<> and use push_back() to not create whole new arrays? dont know if that has any use case in this code.
 int main(int argc, char* argv[]) 	// check if defender is on before running!
 {									// add cleanup for temp files!!
+=======
+	/*
+>>>>>>> bfbdd24 (working need to add binary search now)
 	if (argc < 2) {
 		std::cerr << "Usage: " << argv[0] << " <file_path>" << std::endl;
 		return 1;
 	}
+<<<<<<< HEAD
 	std::string filePath = argv[1];
 
 	Scanner scanner = Scanner();
@@ -28,6 +33,22 @@ int main(int argc, char* argv[]) 	// check if defender is on before running!
 		std::cout << "[+] No bad signature found in file.";
 		return 0;
 	}
+=======
+	const char* filePath = argv[1];
+	*/
+
+	std::string filePath;
+	std::cin >> filePath;
+	Scanner scanner = Scanner();
+
+
+
+
+
+
+
+
+>>>>>>> bfbdd24 (working need to add binary search now)
 
 	std::size_t left = 0;
 	std::size_t right = scanner.fileSize;
