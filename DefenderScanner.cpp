@@ -3,9 +3,17 @@
 #include <filesystem>
 #include "scanner.h"
 
-
-int main(int argc, char* argv[]) 	//check if defender is on before running!
+void debug(std::size_t left, std::size_t right, DWORD scanResult)
 {
+	std::cout << "[-] LEFT : " << left << ", RIGHT : " << right << std::endl;
+	std::cout << "Scan result : " << scanResult << std::endl;
+	std::cin.get();
+}
+
+// We should show a hexdump and which part of the executable (.rdata, .text, etc.)
+// maybe use vector<> and use push_back() to not create whole new arrays? dont know if that has any use case in this code.
+int main(int argc, char* argv[]) 	// check if defender is on before running!
+{									// add cleanup for temp files!!
 	if (argc < 2) {
 		std::cerr << "Usage: " << argv[0] << " <file_path>" << std::endl;
 		return 1;
@@ -26,6 +34,7 @@ int main(int argc, char* argv[]) 	//check if defender is on before running!
 	std::size_t numberOfScans = 0;
 	std::string fileToScan = {};
 
+	debug(left, right, scanResult);
 	// Heavy binary search
 	while (left + 2048 < right) // 2048 is our window size, we could let user decide it for aggressiveness
 	{
@@ -35,11 +44,11 @@ int main(int argc, char* argv[]) 	//check if defender is on before running!
 		scanner.splitToFile(fileToScan, left, mid);
 		scanResult = scanner.scan(fileToScan);
 
-		if (scanResult == 2) // dirty, use left half
+		if (scanResult == 2)
 		{
 			right = mid;
 		}
-		else if (scanResult == 0) // clean
+		else if (scanResult == 0)
 		{
 			numberOfScans++;
 			fileToScan = std::format("{}.bin", numberOfScans);
@@ -48,6 +57,7 @@ int main(int argc, char* argv[]) 	//check if defender is on before running!
 			{
 				left = mid - 512;
 				right = mid + 512;
+				// std::filesystem::remove(fileToScan);
 				break;
 			}
 			else // we continue binary search
@@ -55,15 +65,20 @@ int main(int argc, char* argv[]) 	//check if defender is on before running!
 				left = mid;
 			}
 		}
+
+		debug(left, right, scanResult);
+
+		// std::filesystem::remove(fileToScan); // lacking error handling, add later
 	}
 
 	// Add seperate searching with multithreading for left and right pointers later
 	// Precise window search
-	while (true) // clean left
+	std::cout << "Binary search ended!";
+	while (left < right) // clean left
 	{
 		numberOfScans++;
 		fileToScan = std::format("{}.bin", numberOfScans);
-		scanner.splitToFile(fileToScan, left + 10, right);
+		scanner.splitToFile(fileToScan, left + 100, right);
 		
 		if (scanner.scan(fileToScan) == 0)
 		{
@@ -71,14 +86,15 @@ int main(int argc, char* argv[]) 	//check if defender is on before running!
 		}
 		else
 		{
-			left += 10;
+			left += 100;
 		}
+		debug(left, right, scanResult);
 	}
-	while (true) // clean right
+	while (right > left) // clean right
 	{
 		numberOfScans++;
 		fileToScan = std::format("{}.bin", numberOfScans);
-		scanner.splitToFile(fileToScan, left , right - 10);
+		scanner.splitToFile(fileToScan, left , right - 100);
 
 		if (scanner.scan(fileToScan) == 0)
 		{
@@ -86,10 +102,21 @@ int main(int argc, char* argv[]) 	//check if defender is on before running!
 		}
 		else
 		{
-			right -= 10;
+			right -= 100;
 		}
+		debug(left, right, scanResult);
+	}
+
+	numberOfScans++;
+	fileToScan = std::format("{}.bin", numberOfScans);
+	scanner.splitToFile(fileToScan, left, right);
+	if (scanner.scan(fileToScan) == 0)
+	{
+		std::cerr << "Failed to find bad string. This doesn't invalidate its existence.";
+		return 1;
 	}
 
 	std::cout << "Left : " << left << std::endl << "Right : " << right;
 	std::cin.get();
+	return 0;
 }
