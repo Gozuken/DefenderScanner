@@ -31,6 +31,7 @@ std::string readPipe(HANDLE hRead) {
 // convert path string to wchar and feed it to createprocess
 DWORD Scanner::scan(std::string path)
 {
+    /*
     std::wstring wide_path = boost::locale::conv::to_utf<wchar_t>(path, "UTF-8");
     std::wstring cmdLine = std::format(
         L"C:\\Program Files\\Windows Defender\\MpCmdRun.exe -Scan -ScanType 3 -File \"{}\" -DisableRemediation -Trace -Level 0x10",
@@ -98,6 +99,21 @@ DWORD Scanner::scan(std::string path)
         std::cerr << "Failed to start process. Error: " << GetLastError() << "\n";
         return GetLastError();
     }
+    */
+
+    std::random_device rd;                  // Seed
+    std::mt19937 gen(rd());                 // Mersenne Twister RNG
+    std::bernoulli_distribution dist(0.5);  // 50% true, 50% false
+
+    bool randomBool = dist(gen);
+    if (randomBool == true)
+    {
+        return 2;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 int Scanner::openFile(std::string path)
@@ -117,7 +133,16 @@ int Scanner::openFile(std::string path)
     file.read(fileContent->data(), file_size);
     fileSize = file_size;
 
+<<<<<<< HEAD
     if (!file.good()) {
+=======
+    fileContent = new std::vector<char>(file_size);
+    file.read(fileContent->data(), file_size);  // save filecontent
+    fileSize = file_size;                       // save filesize 
+                                                // in scanner for later use 
+    if (!file.good())
+    {
+>>>>>>> 33e8358 (Full implementation, must be tested)
         std::cerr << "[-] Could not read file";
         return 1;
     }
