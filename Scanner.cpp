@@ -6,9 +6,8 @@
 #include <random>
 #include "scanner.h"
 
-// --------------------[PIPE READING FUNCTION]-----------------------------
 std::string readPipe(HANDLE hRead) {
-    std::string output;
+    std::string output = "";
     const DWORD bufferSize = 4096;
     char buffer[bufferSize];
     DWORD bytesRead;
@@ -16,9 +15,17 @@ std::string readPipe(HANDLE hRead) {
     while (true) {
         BOOL success = ReadFile(hRead, buffer, bufferSize, &bytesRead, NULL);
         if (!success) {
+            DWORD error = GetLastError();
+            // ERROR_BROKEN_PIPE is expected when the writing process closes the pipe
+            if (error == ERROR_BROKEN_PIPE) 
+            {
+                break;
+            }
             throw std::runtime_error("Could not read data from pipe!");
         }
-        else if (bytesRead == 0) {
+
+        if (bytesRead == 0) 
+        {
             break;
         }
         output.append(buffer, bytesRead);
@@ -26,12 +33,11 @@ std::string readPipe(HANDLE hRead) {
 
     return output;
 }
-// ------------------------------------------------------------------------
 
 // convert path string to wchar and feed it to createprocess
+// Unfinished because pipes are not reading the stdout of scanner process yet
 DWORD Scanner::scan(std::string path)
 {
-    /*
     std::wstring wide_path = boost::locale::conv::to_utf<wchar_t>(path, "UTF-8");
     std::wstring cmdLine = std::format(
         L"C:\\Program Files\\Windows Defender\\MpCmdRun.exe -Scan -ScanType 3 -File \"{}\" -DisableRemediation -Trace -Level 0x10",
@@ -51,14 +57,14 @@ DWORD Scanner::scan(std::string path)
     }
 
     SetHandleInformation(hRead, HANDLE_FLAG_INHERIT, 0);
-    // ------------------------------------------------------------------
 
+    // ------------------------------------------------------------------
     // --------------------[PROCESS CREATION]-----------------------------
     wchar_t* cmd = &cmdLine[0];
     STARTUPINFO si = {};
     si.cb = sizeof(si);
-    si.dwFlags = STARTF_USESTDHANDLES;
-    si.hStdOutput = hWrite;  // redirect stdout
+    si.dwFlags |= STARTF_USESTDHANDLES;
+    si.hStdOutput = hWrite;  // redirect stdout to pipe
     si.hStdError = hWrite;
     PROCESS_INFORMATION pi;
 
@@ -67,7 +73,7 @@ DWORD Scanner::scan(std::string path)
         cmd,    // Command line
         NULL,   // Process security attributes
         NULL,   // Thread security attributes
-        TRUE,   // Inherit handles 
+        TRUE,   // Inherit handles (we use this for pipe handles)
         0,      // Creation flags
         NULL,   // Environment
         NULL,   // Current directory
@@ -75,21 +81,22 @@ DWORD Scanner::scan(std::string path)
         &pi     // Process information
     );
     // ------------------------------------------------------------------
+    CloseHandle(hWrite); // Close write handle of parent for EOF
 
-    if (success) {
-        DWORD exitCode = 0;
-        WaitForSingleObject(pi.hProcess, INFINITE);
-        CloseHandle(hWrite); // close the only remaining handle so we can read (EOF)
-
+    if (success) 
+    {
+        DWORD exitCode = 99;
         std::string result;
-        try {
+        try
+        {
             result = readPipe(hRead);
-            std::cout << "RESULT: " << result << std::endl;
+            // std::cout << "RESULT: " << result << std::endl; // write pipe to console
         }
         catch (const std::runtime_error& e) {
             std::cerr << "Runtime error: " << e.what() << std::endl;
         }
 
+        WaitForSingleObject(pi.hProcess, INFINITE);
         GetExitCodeProcess(pi.hProcess, &exitCode);
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);
@@ -99,29 +106,14 @@ DWORD Scanner::scan(std::string path)
         std::cerr << "Failed to start process. Error: " << GetLastError() << "\n";
         return GetLastError();
     }
-    */
-
-    std::random_device rd;                  // Seed
-    std::mt19937 gen(rd());                 // Mersenne Twister RNG
-    std::bernoulli_distribution dist(0.5);  // 50% true, 50% false
-
-    bool randomBool = dist(gen);
-    if (randomBool == true)
-    {
-        return 2;
-    }
-    else
-    {
-        return 0;
-    }
 }
 
-int Scanner::openFile(std::string path)
+bool Scanner::openFile(std::string path)
 {
     std::ifstream file(path, std::ios::binary);
     if (!file) {
         std::cerr << "[-] Could not open the file.";
-        return 1;
+        return false;
     }
 
     // get filesize
@@ -133,31 +125,22 @@ int Scanner::openFile(std::string path)
     file.read(fileContent->data(), file_size);
     fileSize = file_size;
 
-<<<<<<< HEAD
     if (!file.good()) {
-=======
-    fileContent = new std::vector<char>(file_size);
-    file.read(fileContent->data(), file_size);  // save filecontent
-    fileSize = file_size;                       // save filesize 
-                                                // in scanner for later use 
-    if (!file.good())
-    {
->>>>>>> 33e8358 (Full implementation, must be tested)
         std::cerr << "[-] Could not read file";
-        return 1;
+        return false;
     }
 
     file.close();
-    return 0;
+    return true;
 }
 
 // outFileName, startingByte, endingByte
-int Scanner::splitToFile(std::string fileName, int start, int end)
+bool Scanner::splitToFile(std::string fileName, int start, int end)
 {
     std::ofstream file(fileName, std::ios::binary);
     if (!file) {
         std::cerr << "[-] Could not create a file.";
-        return 1;
+        return false;
     }
 
     file.write(fileContent->data() + start, end - start);
@@ -165,8 +148,8 @@ int Scanner::splitToFile(std::string fileName, int start, int end)
 
     if (!file.good()) {
         std::cerr << "[-] Could not write to the file.";
-        return 1;
+        return false;
     }
 
-    return 0;
+    return true;
 }
